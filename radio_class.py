@@ -1,5 +1,5 @@
-from machine import Pin, I2C, Timer
-import pin_lib
+from machine import Pin, I2C
+from pin_lib import *
 
 
 class Radio:
