@@ -20,4 +20,3 @@ class Display:
     
     def __getattribute__(self, __name: str) -> Any: # this allows all functions passed to Display to go to oled
         return getattr(self.oled, __name)
-
