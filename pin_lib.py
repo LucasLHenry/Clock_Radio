@@ -1,3 +1,6 @@
+# list of RASPBERRY PI PICO pin assignments, other files should
+# reference this instead of the pin numbers themselves
+
 RADIO_SDIO_PIN = 26
 RADIO_SCLK_PIN = 27
 
