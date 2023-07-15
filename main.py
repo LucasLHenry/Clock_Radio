@@ -31,4 +31,8 @@ def get_knob_values():
 
 
 while True:
-    pass
+    (cbtn_val, abtn_val, pbtn_val, sbtn_val) = get_button_values()
+    (tswt_val, vswt_val) = get_switch_values()
+    (tknb_val, vknb_val) = get_knob_values()
+
+    display.fill(0)
