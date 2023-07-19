@@ -7,7 +7,8 @@ class Button:
         self.pin.irq(handler=self._handler, trigger=Pin.IRQ_FALLING | Pin.IRQ_RISING)
     
     def _holdtimer_end(self, timer):
-        self.held_db = True
+        if self.pin.value() == 0:
+            self.held_db = True
 
     def _handler(self, pin):
         val = self.pin.value()

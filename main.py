@@ -4,10 +4,10 @@ from encoder_class import Encoder
 from clock_class import Clock
 from button_class import Button
 from pin_lib import *
-from machine import Pin
+from settings_lib import RADIO_STATION
 
 clock = Clock()
-radio = Radio(101.9, 1, False)
+radio = Radio(RADIO_STATION, 1, False)
 display = Display()
 
 clock_sel_btn = Button(BTN1_PIN)
