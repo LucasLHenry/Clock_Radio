@@ -1,5 +1,7 @@
 from machine import Pin, ADC
 
+
+# simple sensor class, just reads from analog input and spits it out
 class Sensor:
     def __init__(self, pinnum):
         self.pin = Pin(pinnum, Pin.IN)

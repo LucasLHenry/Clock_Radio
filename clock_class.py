@@ -10,6 +10,8 @@ class Clock():
         self.rtc.datetime(CLOCK_START_DATETIME)
         self.alarm = (0, 0) # (hour, minute)
     
+
+    # does some checking to make sure everything's a valid time, then plugs it in
     def set_alarm(self, alarm_hour, alarm_minute):
         if not (isinstance(alarm_hour, int) or isinstance(alarm_minute, int)):
             return False
@@ -17,9 +19,11 @@ class Clock():
             return False
         self.alarm = (alarm_hour, alarm_minute)
     
+    # not necessarily needed, but maintains parallelism with get_time
     def get_alarm(self):
         return self.alarm
     
+    # same as set_alarm, does some checking and then plugs it in
     def set_time(self, hour, minute):
         if not (isinstance(hour, int) or isinstance(minute, int)):
             return False
@@ -32,6 +36,7 @@ class Clock():
         (_, _, _, _, hour, minute, _, _) = self.rtc.datetime()
         return (hour, minute)
     
+    # checks whether or not the current time is greater than the alarm time
     def alarm_pending(self):
         (hour, minute) = self.get_time()
         if hour > self.alarm[0] or (hour == self.alarm[0] and minute >= self.alarm[1]):
