@@ -3,6 +3,7 @@ from display_class import Display
 from encoder_class import Encoder
 from clock_class import Clock
 from button_class import Button
+from sensor_class import Sensor
 from pin_lib import *
 from settings_lib import RADIO_STATION
 
@@ -20,6 +21,8 @@ radio_swt = Button(SWT2_PIN)
 
 tune_knob = Encoder(ENC1A_PIN, ENC1B_PIN)
 vol_knob = Encoder(ENC2A_PIN, ENC2B_PIN)
+
+soil_sensor = Sensor(SOIL_A_PIN)
 
 
 while True:
