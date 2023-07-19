@@ -3,6 +3,7 @@ from display_class import Display
 from encoder_class import Encoder
 from clock_class import Clock
 from button_class import Button
+from sensor_class import Sensor
 from pin_lib import *
 from machine import Pin, Timer
 from settings_lib import *
@@ -14,7 +15,7 @@ class Mode(enum):
     PLANT_DISP = 3
 
 clock = Clock()
-r_freq = 101.9
+r_freq = RADIO_STATION
 r_vol = 1
 radio = Radio(r_freq, r_vol, False)
 display = Display()
@@ -32,6 +33,8 @@ radio_swt = Pin(SWT2_PIN, Pin.IN)
 
 tune_knob = Encoder(ENC1A_PIN, ENC1B_PIN)
 vol_knob = Encoder(ENC2A_PIN, ENC2B_PIN)
+
+soil_sensor = Sensor(SOIL_A_PIN)
 
 def update():
     # Steady-state logic
@@ -68,7 +71,7 @@ def update():
         radio.setMute(True)
 
     # Trigger alarm
-    
+
 
     # Set next state
     if clock_sel_btn.get():

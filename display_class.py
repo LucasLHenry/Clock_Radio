@@ -15,10 +15,11 @@ class Display:
         SPI_DEVICE = 0
         oled_spi = SPI(SPI_DEVICE, baudrate=100000, sck=spi_sck, mosi=spi_sda)
         self.oled = SSD1306_SPI(DISPLAY_SCREEN_WIDTH, DISPLAY_SCREEN_HEIGHT, oled_spi, spi_dc, spi_res, spi_cs, True)
-        
+    
     def char_varsize(self, c, x, y, size):
         pass
     
+    # wrapper for char_varsize, so you can print sentences without worrying about cursor location
     def text_varsize(self, text, x, y, size):
         i = 0
         for c in text:
@@ -27,6 +28,7 @@ class Display:
             self.char_varsize(c, pos_x % DISPLAY_SCREEN_WIDTH, pos_y, size)
             i += 1
 
+    # prints a character at a specified location with a specified size, using the line function
     def char_varsize(self, c, x, y, size):
         if c=="A" or c=="a":
             self.oled.line(math.floor(x+1*size),math.floor(y+15*size),math.floor(x+5*size),math.floor(y+1*size),1)
