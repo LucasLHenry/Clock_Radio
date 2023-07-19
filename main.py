@@ -43,13 +43,14 @@ def update():
         time_str = f"{time[0]:2.d}:{time[1]:2.d}"
         display.text_varsize(time_str, 20, 28, 1)
 
-        if radio_swt:
-            freq_offset = tune_knob.get()
-            vol_offset = vol_knob.get()
-            r_freq += freq_offset
-            r_vol += vol_offset
-            radio.SetFrequency(r_freq)
-            radio.SetVolume(r_vol)
+        # Adjust values all the time - display only when changes made
+        # if radio_swt.value():
+        #     freq_offset = tune_knob.get()
+        #     vol_offset = vol_knob.get()
+        #     r_freq += freq_offset
+        #     r_vol += vol_offset
+        #     radio.SetFrequency(r_freq)
+        #     radio.SetVolume(r_vol)
 
     elif curr_mode == Mode.CLOCK_SET:
         h_offset = tune_knob.get()
@@ -65,9 +66,9 @@ def update():
         display.text_varsize("Under Construction", 20, 28, 1)
 
     # Toggle radio
-    if radio_swt:
+    if radio_swt.value():
         radio.setMute(False)
-    elif radio_swt:
+    elif radio_swt.value():
         radio.setMute(True)
 
     # Trigger alarm
@@ -98,4 +99,4 @@ def update():
     curr_mode = next_mode
 
 
-loop_timer.init(mode=Timer.PERIODIC, freq=UPDATE_FREQ, callback=update())
+loop_timer.init(mode=Timer.PERIODIC, freq=UPDATE_FREQ, callback=update)
