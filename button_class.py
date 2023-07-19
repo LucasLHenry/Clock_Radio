@@ -28,6 +28,11 @@ class Button:
         self.pin.irq(handler=self._handler, trigger=Pin.IRQ_FALLING | Pin.IRQ_RISING)
 
     def get(self):
-        to_send = (self.db, self.held_db)
-        (self.db, self.held_db) = (False, False)
+        to_send = self.db
+        self.db = False
+        return to_send
+
+    def get_held(self):
+        to_send = self.held_db
+        self.held_db = False
         return to_send
