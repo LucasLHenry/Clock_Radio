@@ -35,10 +35,3 @@ class Clock():
     def get_time(self):
         (_, _, _, _, hour, minute, _, _) = self.rtc.datetime()
         return (hour, minute)
-    
-    # checks whether or not the current time is greater than the alarm time
-    def alarm_pending(self):
-        (hour, minute) = self.get_time()
-        if hour > self.alarm[0] or (hour == self.alarm[0] and minute >= self.alarm[1]):
-            return True
-        return False
