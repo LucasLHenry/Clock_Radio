@@ -4,7 +4,7 @@ from settings_lib import CLOCK_START_DATETIME
 # simple wrapper for the machine.RTC class, allows parsing and the ability to set an alarm
 # however, this is not a real alarm, it just stores a time. So it must be checked externally
 # whether or not the alarm has gone off
-class Clock():
+class Clock:
     def __init__(self):
         self.rtc = RTC()
         self.rtc.datetime(CLOCK_START_DATETIME)

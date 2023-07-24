@@ -6,175 +6,191 @@ from button_class import Button
 from sensor_class import Sensor
 from pin_lib import *
 from machine import Pin, Timer
-from settings_lib import *
+import settings_lib as settings
 from math import floor
 
-class Disp_Mode(enum):
-    CLOCK_DISP = 0
-    CLOCK_SET = 1
-    ALARM_SET = 2
-    PLANT_DISP = 3
+# class Disp_Mode(enum):
+#     CLOCK_DISP = 0
+#     CLOCK_SET = 1
+#     ALARM_SET = 2
+#     PLANT_DISP = 3
 
-class Time_Mode(enum):
-    H12 = 0
-    H24 = 1
+# class Time_Mode(enum):
+#     H12 = 0
+#     H24 = 1
 
-clock = Clock()
-r_freq = RADIO_STATION
-r_vol = 1
-r_mute = False
-radio = Radio(r_freq, r_vol, False)
-display = Display()
+class Device:
+    def __init__(self):
+        self.clock = Clock()
+        self.r_freq = settings.RADIO_STATION
+        self.r_vol = 1
+        self.r_mute = True
+        self.radio = Radio(self.r_freq, self.r_vol, self.r_mute)
+        self.display = Display()
+        self.timeout = 0
+        self.alarm_primed = False
+        self.alarm_active = False
+        self.alarm_snoozed = False
+        self.snooze_timeout = 0
+        self.curr_mode = 0
+        self.next_mode = 0
+        self.t_mode = 0
+        self.newtime = (0, 0)
+        self.newalarm = (0, 0)
+        self.clock_sel_btn = Button(BTN1_PIN)
+        self.alarm_sel_btn = Button(BTN2_PIN)
+        self.plant_sel_btn = Button(BTN3_PIN)
+        self.snooze_btn = Button(BTN4_PIN)
+        self.alarm_swt = Pin(SWT1_PIN, Pin.IN)
+        self.radio_swt = Pin(SWT2_PIN, Pin.IN)
+        self.tune_knob = Encoder(ENC1A_PIN, ENC1B_PIN)
+        self.vol_knob = Encoder(ENC2A_PIN, ENC2B_PIN)
+        self.soil_sensor = Sensor(SOIL_A_PIN)
+
+dh = Device()
 loop_timer = Timer()
-timeout = 0
 
-alarm_primed = False
-alarm_active = False
-alarm_snoozed = False
-snooze_timeout = 0
-
-curr_mode = Disp_Mode(Disp_Mode.CLOCK_DISP)
-t_mode = Time_Mode(Time_Mode.H12)
-
-clock_sel_btn = Button(BTN1_PIN)
-alarm_sel_btn = Button(BTN2_PIN)
-plant_sel_btn = Button(BTN3_PIN)
-snooze_btn = Button(BTN4_PIN)
-
-alarm_swt = Pin(SWT1_PIN, Pin.IN)
-radio_swt = Pin(SWT2_PIN, Pin.IN)
-
-tune_knob = Encoder(ENC1A_PIN, ENC1B_PIN)
-vol_knob = Encoder(ENC2A_PIN, ENC2B_PIN)
-
-soil_sensor = Sensor(SOIL_A_PIN)
-
-def display_time(time):
-    if t_mode == H12:
-            time_str = f"{ time[0] if time[0] <= 12 else time[0] - 12 :d}:{time[1]:2.d}"
-            display.text_varsize(time_str, 20, 28, 1)
+def display_time(dh, time):
+    if dh.t_mode == 0:
+        hour = time[0]
+        if hour == 0:
+            time_str = f"12:{floor(time[1]):02} AM"
+        elif hour < 12:
+            time_str = f"{floor(hour):2}:{floor(time[1]):02} AM"
         else:
-            time_str = f"{time[0]:2.d}:{time[1]:2.d}"
-            display.text_varsize(time_str, 20, 28, 1)
+            time_str = f"{floor(hour-12):2}:{floor(time[1]):02} PM"
+        dh.display.text_varsize(time_str, 20, 28, 1)
+    else:
+        time_str = f"{floor(time[0]):02}:{floor(time[1]):02}"
+        dh.display.text_varsize(time_str, 20, 28, 1)
 
 def offset_with_bounds(value, offset, lower_bound, upper_bound):
     newvalue = value + offset
-    if newvalue < lower_bound:
-        new_value += upper_bound - lower_bound
-    elif newvalue > upper_bound:
+    while newvalue < lower_bound:
+        newvalue += upper_bound - lower_bound
+    while newvalue >= upper_bound:
         newvalue -= upper_bound - lower_bound
     return newvalue
 
-def update():
-    # Steady-state logic
-    if curr_mode == Disp_Mode.CLOCK_DISP:
-        time = clock.get_time()
-        display_time(time)
+def update(_timer):
+    global dh
 
-        freq_offset = tune_knob.get()
-        vol_offset = vol_knob.get()
+    dh.display.oled.fill(0)
+
+    # Steady-state logic
+    if dh.curr_mode == 0:
+        time = dh.clock.get_time()
+        display_time(dh, time)
+
+        freq_offset = dh.tune_knob.get()
+        vol_offset = dh.vol_knob.get()
 
         if freq_offset or vol_offset:
-            r_freq = offset_with_bounds(r_freq, freq_offset*FREQ_MULTIPLIER, 76, 108)
-            r_vol = offset_with_bounds(r_vol, vol_offset*VOL_MULTIPLIER, 1, 16)
-            radio.SetFrequency(floor(r_freq))
-            radio.SetVolume(floor(r_vol))
-            freq_vol_str = f"Freq: {floor(r_freq):5.1d},   Vol: {floor(r_vol):2.d}"
-            display.text_varsize(freq_vol_str, 10, 28, 1)
+            dh.r_freq = offset_with_bounds(dh.r_freq, freq_offset*settings.FREQ_MULTIPLIER, 76, 108)
+            dh.r_vol = offset_with_bounds(dh.r_vol, vol_offset*settings.VOL_MULTIPLIER, 1, 16)
+            dh.radio.SetFrequency(floor(dh.r_freq))
+            dh.radio.SetVolume(floor(dh.r_vol))
+            freq_vol_str = f"Freq: {floor(dh.r_freq):5.1f},   Vol: {floor(dh.r_vol):2d}"
+            dh.display.text_varsize(freq_vol_str, 10, 28, 1)
 
 
-    elif curr_mode == Disp_Mode.CLOCK_SET:
-        h_offset = tune_knob.get()
-        m_offset = vol_knob.get()
-        newtime = (
-            offset_with_bounds(newtime[0], h_offset*TIME_MULTIPLIER, 0, 60),
-            offset_with_bounds(newtime[1], m_offset*TIME_MULTIPLIER, 0, 60)
+    elif dh.curr_mode == 1:
+        h_offset = dh.tune_knob.get()
+        m_offset = dh.vol_knob.get()
+        dh.newtime = (
+            offset_with_bounds(dh.newtime[0], h_offset*settings.TIME_MULTIPLIER, 0, 24),
+            offset_with_bounds(dh.newtime[1], m_offset*settings.TIME_MULTIPLIER, 0, 60)
         )
-        display_time(newtime)
+        display_time(dh, dh.newtime)
 
-        if clock_sel_btn.get_held():
-            t_mode = H24 if t_mode == H12 else H12
+        if dh.clock_sel_btn.get_held():
+            dh.t_mode = 1 if dh.t_mode == 0 else 0
 
-    elif curr_mode == Disp_Mode.ALARM_SET:
-        h_offset = tune_knob.get()
-        m_offset = vol_knob.get()
-        newalarm = (
-            offset_with_bounds(newalarm[0], h_offset*TIME_MULTIPLIER, 0, 60),
-            offset_with_bounds(newalarm[1], m_offset*TIME_MULTIPLIER, 0, 60)
+    elif dh.curr_mode == 2:
+        h_offset = dh.tune_knob.get()
+        m_offset = dh.vol_knob.get()
+        dh.newalarm = (
+            offset_with_bounds(dh.newalarm[0], h_offset*settings.TIME_MULTIPLIER, 0, 24),
+            offset_with_bounds(dh.newalarm[1], m_offset*settings.TIME_MULTIPLIER, 0, 60)
         )
-        display_time(newalarm)
+        display_time(dh, dh.newalarm)
 
-        if alarm_sel_btn.get_held() and alarm_active:
-            snooze_timeout = SNOOZE_DELAY*60*UPDATE_FREQ
-            alarm_snoozed = True
+        if dh.alarm_sel_btn.get_held() and dh.alarm_active:
+            dh.snooze_timeout = settings.SNOOZE_DELAY*60*settings.UPDATE_FREQ
+            dh.alarm_snoozed = True
 
-    elif curr_mode == Disp_Mode.PLANT_DISP:
-        display.text_varsize("Under Construction", 20, 28, 1)
+    elif dh.curr_mode == 3:
+        moisture = floor((dh.soil_sensor.get_voltage() / 5)*100)
+        moisture_str = f"Soil Water: {moisture:2d}%"
+        dh.display.text_varsize("moisture_str", 20, 28, 1)
 
 
     # Toggle radio
-    if radio_swt.value() and r_mute and not alarm_active:
-        r_mute = False
-        radio.setMute(r_mute)
-    elif not radio_swt.value() and not r_mute and not alarm_active:
-        r_mute = True
-        radio.setMute(r_mute)
+    if dh.radio_swt.value() and dh.r_mute and not dh.alarm_active:
+        dh.r_mute = False
+        dh.radio.SetMute(dh.r_mute)
+    elif not dh.radio_swt.value() and not dh.r_mute and not dh.alarm_active:
+        dh.r_mute = True
+        dh.radio.SetMute(dh.r_mute)
 
-    if r_mute and alarm_active and not alarm_snoozed:
-        r_mute = False
-        radio.setMute(r_mute)
-    elif not r_mute and alarm_active and alarm_snoozed:
-        r_mute = True
-        radio.setMute(r_mute)
+    if dh.r_mute and dh.alarm_active and not dh.alarm_snoozed:
+        dh.r_mute = False
+        dh.radio.SetMute(dh.r_mute)
+    elif not dh.r_mute and dh.alarm_active and dh.alarm_snoozed:
+        dh.r_mute = True
+        dh.radio.SetMute(dh.r_mute)
 
     # Trigger alarm
-    if alarm_swt.value():
-        time = clock.get_time()
-        alarm = clock.get_alarm()
+    if dh.alarm_swt.value():
+        time = dh.clock.get_time()
+        alarm = dh.clock.get_alarm()
         if alarm[0] == time[0] and alarm[1] == time[1]:
-            if alarm_primed:
-                alarm_primed = False
-                alarm_snoozed = False
-                alarm_active = True
-        else
-            alarm_primed = True
+            if dh.alarm_primed:
+                dh.alarm_primed = False
+                dh.alarm_snoozed = False
+                dh.alarm_active = True
+        else:
+            dh.alarm_primed = True
     else:
-        alarm_primed = False
-        alarm_active = False
+        dh.alarm_primed = False
+        dh.alarm_active = False
 
-    if alarm_snoozed and snooze_timeout > 0:
-        snooze_timeout -= 1
-    elif alarm_snoozed and snooze_timeout <= 0:
-        alarm_snoozed = False
+    if dh.alarm_snoozed and dh.snooze_timeout > 0:
+        dh.snooze_timeout -= 1
+    elif dh.alarm_snoozed and dh.snooze_timeout <= 0:
+        dh.alarm_snoozed = False
 
     # Set next state
-    if clock_sel_btn.get():
-        next_mode = Disp_Mode.CLOCK_SET if not curr_mode == Disp_Mode.CLOCK_SET else Disp_Mode.CLOCK_DISP
-    elif alarm_sel_btn.get():
-        next_mode = Disp_Mode.ALARM_SET if not curr_mode == Disp_Mode.ALARM_SET else Disp_Mode.CLOCK_DISP
-    elif plant_sel_btn.get():
-        next_mode = Disp_Mode.PLANT_DISP if not curr_mode == Disp_Mode.PLANT_DISP else Disp_Mode.CLOCK_DISP
+    if dh.clock_sel_btn.get():
+        dh.next_mode = 1 if not dh.curr_mode == 1 else 0
+    elif dh.alarm_sel_btn.get():
+        dh.next_mode = 2 if not dh.curr_mode == 2 else 0
+    elif dh.plant_sel_btn.get():
+        dh.next_mode = 3 if not dh.curr_mode == 3 else 0
     else:
-        timeout += 1
-        if timeout >= UPDATE_FREQ*MODE_TIMEOUT:
-            next_mode = Disp_Mode.CLOCK_DISP
-        else:
-            next_mode = curr_mode
+        pass
+        # dh.timeout += 1
+        # if dh.timeout >= settings.UPDATE_FREQ*settings.MODE_TIMEOUT:
+        #     dh.next_mode = 0
+        # else:
+        #     dh.next_mode = dh.curr_mode
 
     # State transition logic
-    if next_mode != curr_mode:
-        timeout = 0
-        if next_mode == Disp_Mode.CLOCK_SET:
-            newtime = clock.get_time()
-        elif next_mode == Disp_Mode.ALARM_SET:
-            newalarm == clock.get_alarm()
-        elif curr_mode == Disp_Mode.CLOCK_SET:
-            clock.set_time((floor(newtime[0]), floor(newtime[1])))
-        elif curr_mode == Disp_Mode.ALARM_SET:
-            clock.set_alarm((floor(newalarm[0]), floor(newalarm[1])))
+    if dh.next_mode != dh.curr_mode:
+        dh.timeout = 0
+        if dh.next_mode == 1:
+            dh.newtime = dh.clock.get_time()
+        elif dh.next_mode == 2:
+            dh.newalarm == dh.clock.get_alarm()
+        elif dh.curr_mode == 1:
+            dh.clock.set_time(int(floor(dh.newtime[0])), int(floor(dh.newtime[1])))
+        elif dh.curr_mode == 2:
+            dh.clock.set_alarm(int(floor(dh.newalarm[0])), int(floor(dh.newalarm[1])))
 
     # Mutate state
-    curr_mode = next_mode
+    dh.curr_mode = dh.next_mode
+
+    dh.display.oled.show()
 
 
-loop_timer.init(mode=Timer.PERIODIC, freq=UPDATE_FREQ, callback=update)
+loop_timer.init(mode=Timer.PERIODIC, freq=settings.UPDATE_FREQ, callback=update)

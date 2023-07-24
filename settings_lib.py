@@ -1,6 +1,6 @@
-# values that various classes use to determine their behaviour
+# values that various classes use to determine their behavior
 
-ENCODER_DIR_CHANGE_MARGIN = 1
+ENCODER_DIR_CHANGE_MARGIN = 2
 RADIO_MAX_TRIES = 10
 RADIO_STATION = 101.9
 CLOCK_START_DATETIME = (2023, 1, 1, 1, 1, 1, 1, 0)
