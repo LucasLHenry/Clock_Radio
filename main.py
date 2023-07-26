@@ -111,6 +111,7 @@ def update(_timer):
             if dh.radio_changed:
                 dh.radio.ProgramRadio()
                 dh.radio_changed = False
+                print("programming")
 
         if dh.clock_sel_btn.get():
             dh.t_mode = 1 if dh.t_mode == 0 else 0
