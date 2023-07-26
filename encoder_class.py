@@ -62,4 +62,4 @@ class Encoder:
     def get(self):
         to_send = self.value
         self.value = 0
-        return to_send
+        return -to_send

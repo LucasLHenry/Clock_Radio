@@ -9,6 +9,7 @@ class Button:
     def _holdtimer_end(self, timer):
         if self.pin.value() == 0:
             self.held_db = True
+            self.press_gate = False
 
     # the debounce logic is as follows:
     #   on interrupt, set internal value to correct value as read from pin
@@ -25,16 +26,18 @@ class Button:
         val = self.pin.value()
         self.pin.irq(handler=None)
         if val == 0: # low value, so with pullup resistor it is pressed, therefore falling edge
-            self.db = True
+            self.press_gate = True
             self.holdtimer.init(mode=Timer.ONE_SHOT, period=BUTTON_HOLDTIME_MS, callback=self._holdtimer_end)
         else:
             self.holdtimer.deinit()
+            self.db = self.press_gate
         self.waittimer.init(mode=Timer.ONE_SHOT, period=BUTTON_DOWNTIME_MS, callback=self._timer_end)
 
     def __init__(self, pin_num):
         self.pin = Pin(pin_num, Pin.IN)
         self.waittimer = Timer()
         self.holdtimer = Timer()
+        self.press_gate = False
         self.db = False
         self.held_db = False
         self.pin.irq(handler=self._handler, trigger=Pin.IRQ_FALLING | Pin.IRQ_RISING)
@@ -49,3 +52,4 @@ class Button:
     def get_held(self):
         to_send = self.held_db
         self.held_db = False
+        return to_send

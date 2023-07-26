@@ -62,9 +62,9 @@ class Radio:
         
     def SetMute(self, NewMute):
         try:
-            self.Mute = bool(int(NewMute))   
+            self.Mute = bool(int(NewMute))
         except:
-            return False 
+            return False
         return True
 
 
@@ -75,7 +75,7 @@ class Radio:
         # split the 10 bits into 2 bytes
         ByteCode[0] = (Frequency >> 2) & 0xFF
         ByteCode[1] = ((Frequency & 0x03) << 6) & 0xC0
-        return ByteCode 
+        return ByteCode
 
 
     # Configure the settings array with the mute, frequency and volume settings
@@ -84,17 +84,18 @@ class Radio:
             self.Settings[0] = 0x80
         else:
             self.Settings[0] = 0xC0
-            
+
         self.Settings[1] = 0x09 | 0x04
         self.Settings[2:3] = self.ComputeChannelSetting(self.Frequency)
+        self.Settings[2] = self.Settings[2] | 0x100
         self.Settings[3] = self.Settings[3] | 0x10
         self.Settings[4] = 0x04
         self.Settings[5] = 0x00
         self.Settings[6] = 0x84
         self.Settings[7] = 0x80 + self.Volume
-        
-        
-    # Update the settings array and transmitt it to the radio
+
+
+    # Update the settings array and transmit it to the radio
     def ProgramRadio(self):
         self.UpdateSettings()
         # we were having trouble getting a connection, so the solution
@@ -113,7 +114,7 @@ class Radio:
 
 
     # Extract the settings from the radio registers
-    def GetSettings(self):   
+    def GetSettings(self):
         # Need to read the entire register space. This is allow access to the mute and volume settings
         # same issue of just trying a bunch of times until it works.
         success = False
@@ -127,19 +128,19 @@ class Radio:
                 continue
         if not success:
             print(f"failed to read after {counter} attempts")
-        
+
         if ((self.RadioStatus[0xF0] & 0x40) != 0x00):
             MuteStatus = False
         else:
-            MuteStatus = True 
+            MuteStatus = True
         VolumeStatus = self.RadioStatus[0xF7] & 0x0F
         # Convert the frequency 10 bit count into actual frequency in Mhz
         FrequencyStatus = ((self.RadioStatus[0x00] & 0x03) << 8) | (self.RadioStatus[0x01] & 0xFF)
         FrequencyStatus = (FrequencyStatus * 0.1) + 87.0
-        
+
         if ((self.RadioStatus[0x00] & 0x04) != 0x00):
             StereoStatus = True
         else:
             StereoStatus = False
         return (MuteStatus, VolumeStatus, FrequencyStatus, StereoStatus)
-    
+
