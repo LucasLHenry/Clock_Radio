@@ -7,7 +7,7 @@ from sensor_class import Sensor
 from pin_lib import *
 from machine import Pin, Timer
 import settings_lib as settings
-from math import floor
+from math import floor, ceil
 
 # class Disp_Mode(enum):
 #     CLOCK_DISP = 0
@@ -27,7 +27,6 @@ class Device:
         self.r_mute = True
         self.radio = Radio(self.r_freq, self.r_vol, self.r_mute)
         self.radio_changed = False
-        self.radio_timeout = 0
         self.display = Display()
         self.alarm_primed = False
         self.alarm_active = False
@@ -98,7 +97,7 @@ def update(_timer):
 
         if freq_offset != 0 or vol_offset != 0:
             dh.info_timeout = settings.INFO_TIMEOUT*settings.UPDATE_FREQ
-            dh.radio.SetFrequency(floor(dh.r_freq*10)/10)
+            dh.radio.SetFrequency((floor(dh.r_freq*5+0.5)-0.5)/5)
             dh.radio.SetVolume(dh.r_vol)
             dh.radio_changed = True
 
@@ -109,6 +108,9 @@ def update(_timer):
         else:
             time = dh.clock.get_time()
             display_time(dh, time)
+            if dh.radio_changed:
+                dh.radio.ProgramRadio()
+                dh.radio_changed = False
 
         if dh.clock_sel_btn.get():
             dh.t_mode = 1 if dh.t_mode == 0 else 0
@@ -160,20 +162,19 @@ def update(_timer):
     if not dh.radio_swt.value() and dh.r_mute and not dh.alarm_active:
         dh.r_mute = False
         dh.radio.SetMute(dh.r_mute)
-        dh.radio_changed = True
+        dh.radio.ProgramRadio()
     elif dh.radio_swt.value() and not dh.r_mute and not dh.alarm_active:
         dh.r_mute = True
         dh.radio.SetMute(dh.r_mute)
-        dh.radio_changed = True
-
+        dh.radio.ProgramRadio()
     if dh.r_mute and dh.alarm_active and not dh.alarm_snoozed:
         dh.r_mute = False
         dh.radio.SetMute(dh.r_mute)
-        dh.radio_changed = True
+        ddh.radio.ProgramRadio()
     elif not dh.r_mute and dh.alarm_active and dh.alarm_snoozed:
         dh.r_mute = True
         dh.radio.SetMute(dh.r_mute)
-        dh.radio_changed = True
+        dh.radio.ProgramRadio()
 
     # Trigger alarm
     if not dh.alarm_swt.value():
@@ -194,14 +195,6 @@ def update(_timer):
         dh.snooze_timeout -= 1
     elif dh.alarm_snoozed and dh.snooze_timeout <= 0:
         dh.alarm_snoozed = False
-
-    # Program Radio
-    if dh.radio_changed and dh.radio_timeout <= 0:
-        dh.radio.ProgramRadio()
-        dh.radio_changed = False
-        dh.radio_timeout = settings.UPDATE_FREQ
-    elif dh.radio_timeout > 0:
-        dh.radio_timeout -= 1
 
     # Set next state
     if dh.clock_sel_btn.get_held():

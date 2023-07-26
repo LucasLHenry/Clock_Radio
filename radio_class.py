@@ -85,13 +85,12 @@ class Radio:
         else:
             self.Settings[0] = 0xC0
 
-        self.Settings[1] = 0x09 | 0x04
+        self.Settings[1] = 0x09 
         self.Settings[2:3] = self.ComputeChannelSetting(self.Frequency)
-        self.Settings[2] = self.Settings[2] | 0x100
         self.Settings[3] = self.Settings[3] | 0x10
         self.Settings[4] = 0x04
         self.Settings[5] = 0x00
-        self.Settings[6] = 0x84
+        self.Settings[6] = 0x8F
         self.Settings[7] = 0x80 + self.Volume
 
 
@@ -143,4 +142,3 @@ class Radio:
         else:
             StereoStatus = False
         return (MuteStatus, VolumeStatus, FrequencyStatus, StereoStatus)
-
