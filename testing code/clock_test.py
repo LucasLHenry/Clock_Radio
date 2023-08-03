@@ -1,7 +1,8 @@
 from clock_class import Clock
 from math import floor
 from machine import Timer
-from settings_lib import UPDATE_FREQ
+
+UPDATE_FREQ = 2
 
 clock = Clock()
 clock.set_time(4, 0)
